@@ -1,0 +1,8 @@
+
+data
+models
+figures
+.venv
+.idea
+__pycahce__
+*.iml
