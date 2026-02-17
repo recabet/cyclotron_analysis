@@ -6,9 +6,7 @@ import numpy as np
 from typing import Tuple, Dict, Any
 
 
-def load_fid_compound(
-        fid_file: str, compound_idx: int
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def load_fid_compound(fid_file: str, compound_idx: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Load FID signals for a single compound at all resolutions.
 
@@ -22,9 +20,7 @@ def load_fid_compound(
     return hr, mid, low
 
 
-def load_spectrum_compound(
-        fft_file: str, compound_idx: int
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def load_spectrum_compound(fft_file: str, compound_idx: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Load normalized FFT magnitude spectra for a single compound.
 
@@ -39,9 +35,7 @@ def load_spectrum_compound(
     return freq, hr, mid, low
 
 
-def load_training_data(
-        training_file: str
-) -> Dict[str, Any]:
+def load_training_data(training_file: str) -> Dict[str, Any]:
     """
     Load the complete training dataset with metadata.
 

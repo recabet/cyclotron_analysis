@@ -6,3 +6,4 @@ figures
 .idea
 __pycahce__
 *.iml
+*.pyc

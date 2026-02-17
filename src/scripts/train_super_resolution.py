@@ -8,6 +8,7 @@ Includes real-time training visualization with Tkinter GUI.
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.profiler import profile, ProfilerActivity
 from torch.utils.data import DataLoader
 import h5py
 import tkinter as tk
@@ -205,17 +206,33 @@ def main():
     print("=" * 60)
 
     train_ds = H5SpectraDataset(config.H5_PATH, config.X_KEY, config.Y_KEY,
-                                indices=train_idx, normalize=False)
-    val_ds = H5SpectraDataset(config.H5_PATH, config.X_KEY, config.Y_KEY,
-                              indices=val_idx, normalize=False)
-    test_ds = H5SpectraDataset(config.H5_PATH, config.X_KEY, config.Y_KEY,
-                               indices=test_idx, normalize=False)
+                                indices=train_idx, normalize=True)
+    sample_x, sample_y = train_ds[0]  # get one sample
+    print(f"\nSample shapes:")
+    print(f"  x shape: {sample_x.shape}")  # should be (seq_len, 1)
+    print(f"  y shape: {sample_y.shape}")
 
-    train_loader = DataLoader(train_ds, batch_size=config.BATCH_SIZE, shuffle=True,
-                              num_workers=0, pin_memory=True)
-    val_loader = DataLoader(val_ds, batch_size=config.BATCH_SIZE, shuffle=False,
-                            num_workers=0, pin_memory=True)
-    test_loader = DataLoader(test_ds, batch_size=config.BATCH_SIZE, shuffle=False,
+    val_ds = H5SpectraDataset(config.H5_PATH, config.X_KEY, config.Y_KEY,
+                              indices=val_idx, normalize=True)
+
+    test_ds = H5SpectraDataset(config.H5_PATH, config.X_KEY, config.Y_KEY,
+                               indices=test_idx, normalize=True)
+
+    train_loader = DataLoader(train_ds,
+                              batch_size=config.BATCH_SIZE,
+                              shuffle=True,
+                              num_workers=0,
+                              pin_memory=True)
+
+    val_loader = DataLoader(val_ds,
+                            batch_size=config.BATCH_SIZE,
+                            shuffle=False,
+                            num_workers=0,
+                            pin_memory=True)
+
+    test_loader = DataLoader(test_ds,
+                             batch_size=config.BATCH_SIZE,
+                             shuffle=False,
                              num_workers=0, pin_memory=True)
 
     print(f"Batch size: {config.BATCH_SIZE}")
@@ -244,8 +261,29 @@ def main():
 
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Total parameters: {total_params:,}")
+
+    print(f"TOTAL parameters: {total_params:,}")
     print(f"Trainable parameters: {trainable_params:,}")
+
+    # seq_len_proxy = 2048  # smaller than full FID to avoid OOM
+    # x = torch.randn(1, seq_len_proxy, 1, device=device)
+    # with profile(activities=[ProfilerActivity.CUDA], profile_memory=True) as prof:
+    #     with torch.no_grad():  # no grad needed for memory estimate
+    #         model(x)
+    #
+    # print("\n=== CUDA Memory Usage Estimate (per op) ===\n")
+    # print(prof.key_averages().table(
+    #     sort_by="self_cuda_memory_usage",
+    #     row_limit=20
+    # ))
+
+    # # Print total params and batch-size estimate
+    # total_params = sum(p.numel() for p in model.parameters())
+    # print(f"\nTotal parameters: {total_params:,} (~{total_params * 4 / 1024 ** 2:.2f} MB float32)")
+    #
+    # # Rough batch memory estimate (forward pass only)
+    # batch_mem_MB = (x.numel() * 4 + sum(p.numel() for p in model.parameters()) * 4) / 1024 ** 2
+    # print(f"Rough memory for batch_size=1, seq_len={seq_len_proxy}: {batch_mem_MB:.2f} MB")
 
     # ------------------------------------------------------------
     # 4. Loss and optimizer
@@ -326,7 +364,7 @@ def main():
     y_true_list, y_pred_list = [], []
     with torch.no_grad():
         for xb, yb in test_loader:
-            yb = yb.to(devicenon_blocking=True).float()
+            yb = yb.to(non_blocking=True).float()
             xb = xb.to(device,non_blocking=True).float()
             y_hat = model(xb)
             y_true_list.append(yb.cpu().numpy())

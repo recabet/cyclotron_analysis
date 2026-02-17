@@ -4,8 +4,7 @@ FID (Free Induction Decay) signal generation.
 import numpy as np
 
 
-def damping_envelope(t: np.ndarray,
-                    final_amplitude: float = 0.01) -> np.ndarray:
+def damping_envelope(t: np.ndarray, final_amplitude: float = 0.01) -> np.ndarray:
     """
     Exponential damping: amplitude decays to `final_amplitude` at t[-1].
 

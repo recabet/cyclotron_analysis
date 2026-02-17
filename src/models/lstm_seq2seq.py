@@ -23,13 +23,14 @@ class LSTMSeq2Seq(nn.Module):
                  use_attn_bridge: bool = True,
                  attn_heads: int = 16,
                  attn_layers: int = 2):
+
         super().__init__()
 
         self.bidirectional = bidirectional
         self.num_dirs = 2 if bidirectional else 1
         self.enc_hidden = enc_hidden
 
-        # Encoder
+
         self.encoder = nn.LSTM(
             input_size=in_dim,
             hidden_size=enc_hidden,
@@ -45,8 +46,11 @@ class LSTMSeq2Seq(nn.Module):
 
         # Bridge
         if use_attn_bridge:
-            self.bridge = AttnBridge(enc_out_dim, dec_hidden,
-                                     nhead=attn_heads, num_layers=attn_layers, dropout=dropout)
+            self.bridge = AttnBridge(enc_out_dim,
+                                     dec_hidden,
+                                     nhead=attn_heads,
+                                     num_layers=attn_layers,
+                                     dropout=dropout)
         else:
             self.bridge = nn.Linear(enc_out_dim, dec_hidden)
             nn.init.xavier_uniform_(self.bridge.weight)

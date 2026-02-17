@@ -11,10 +11,14 @@ class H5SpectraDataset(Dataset):
     NOTE: Use num_workers=0 in DataLoader to avoid h5py multiprocessing issues.
     """
 
-    def __init__(self, h5_path: str, x_key: str, y_key: str,
+    def __init__(self,
+                 h5_path: str,
+                 x_key: str,
+                 y_key: str,
                  indices: np.ndarray = None,
                  normalize: bool = True,
                  eps: float = 1e-12):
+
         super().__init__()
         self.h5_path = h5_path
         self.x_key = x_key

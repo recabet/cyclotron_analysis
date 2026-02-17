@@ -5,9 +5,7 @@ import numpy as np
 from typing import Tuple
 
 
-def iqr_outlier_filter(
-        values: np.ndarray, k: float = 1.5
-) -> Tuple[np.ndarray, np.ndarray, float, float]:
+def iqr_outlier_filter(values: np.ndarray, k: float = 1.5) -> Tuple[np.ndarray, np.ndarray, float, float]:
     """
     Identify outliers using the Tukey IQR rule.
 

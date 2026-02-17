@@ -27,7 +27,10 @@ from src.io.hdf5_writers import (
 )
 
 
-def generate_and_save_fids(config, formulas, frequencies, amplitudes):
+def generate_and_save_fids(config,
+                           formulas,
+                           frequencies,
+                           amplitudes):
     """Step 1: Generate and save FID signals."""
     print("\n" + "=" * 60)
     print("STEP 1/3: Generating FID signals")

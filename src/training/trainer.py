@@ -41,9 +41,11 @@ def train_one_epoch(model,
                     clip_norm=1.0):
     model.train()
     total_loss = 0.0
-    for xb, yb in train_loader:
+    for i, (xb, yb) in enumerate(train_loader, start=1):
         xb = xb.to(device, non_blocking=True).float().contiguous()
         yb = yb.to(device, non_blocking=True).float().contiguous()
+        print(f"Batch {i}/{len(train_loader)}")  # <-- print step i/j
+
         optimizer.zero_grad(set_to_none=True)
         y_hat = model(xb)
         loss = criterion(y_hat, yb)
@@ -58,9 +60,10 @@ def validate(model, val_loader, criterion, device):
     model.eval()
     total_loss = 0.0
     with torch.no_grad():
-        for xb, yb in val_loader:
+        for i, (xb, yb) in enumerate(val_loader, start=1):
             xb = xb.to(device, non_blocking=True).float().contiguous()
             yb = yb.to(device, non_blocking=True).float().contiguous()
+            print(f"Validation Batch {i}/{len(val_loader)}")  # optional
             y_hat = model(xb)
             loss = criterion(y_hat, yb)
             total_loss += loss.item() * xb.size(0)
@@ -84,8 +87,10 @@ def fit(model,
     history = {"train": [], "val": []}
 
     for epoch in range(1, epochs + 1):
+        print(f"epoch {epoch}/{epochs}: ")
         if torch.cuda.is_available():
             torch.cuda.synchronize()
+        print("Synchronizing CUDA devices Done ")
 
         t0 = time.time()
 

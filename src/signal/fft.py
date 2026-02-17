@@ -5,9 +5,9 @@ import numpy as np
 from typing import Tuple
 
 
-def compute_fft_magnitude(
-        signal: np.ndarray, n_fft: int, sampling_interval: float
-) -> Tuple[np.ndarray, np.ndarray]:
+def compute_fft_magnitude( signal: np.ndarray,
+                           n_fft: int,
+                           sampling_interval: float) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute real FFT magnitude normalized by n_fft.
 

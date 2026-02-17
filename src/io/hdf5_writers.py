@@ -4,7 +4,8 @@ HDF5 writing operations for FIDs, FFTs, and training segments.
 import numpy as np
 import h5py
 from typing import List, Tuple
-from src.config.settings import Config
+import os
+from src.config.settings import SimulationConfig
 
 
 
@@ -55,7 +56,7 @@ def write_fft_batch(
 
 
 def save_filtered_segments(
-    config: Config,
+    config: SimulationConfig,
     formulas: List[str],
     fft_freq: np.ndarray,
     segments_hr: np.ndarray,
@@ -94,8 +95,6 @@ def save_filtered_segments(
     # Output file name
     out_file = config.SEGMENTS_H5.format(n_high=config.N_POINTS_FID)
 
-    # Ensure directory exists
-    import os
     os.makedirs(os.path.dirname(out_file), exist_ok=True)
 
     with h5py.File(out_file, "w") as h5f:

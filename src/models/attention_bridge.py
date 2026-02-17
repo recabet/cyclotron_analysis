@@ -1,14 +1,21 @@
 import torch
 import torch.nn as nn
 
+
 class AttnBridge(nn.Module):
     """
     Transformer-style self-attention bridge between encoder and decoder.
     Projects encoder output to decoder dimension and applies multiple
     self-attention layers with feed-forward networks.
     """
-    def __init__(self, enc_dim: int, dec_dim: int, nhead: int = 4,
-                 num_layers: int = 1, dropout: float = 0.1, ff_mult: int = 2):
+
+    def __init__(self,
+                 enc_dim: int,
+                 dec_dim: int,
+                 nhead: int = 4,
+                 num_layers: int = 1,
+                 dropout: float = 0.1,
+                 ff_mult: int = 2):
         super().__init__()
         self.proj_in = nn.Linear(enc_dim, dec_dim)
         self.layers = nn.ModuleList()

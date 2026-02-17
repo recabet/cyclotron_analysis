@@ -6,10 +6,7 @@ import numpy as np
 import IsoSpecPy as iso
 
 
-def load_compounds(
-        filename: str,
-        coverage: float = 0.99
-):
+def load_compounds(filename: str, coverage: float = 0.99):
     """
     Read chemical formulas from a text file (one per line) and compute:
         - isotope masses (m/z)    [g/mol]
