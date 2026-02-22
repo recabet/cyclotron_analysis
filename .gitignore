@@ -4,8 +4,8 @@ weights
 figures
 .venv
 .idea
-__pycahce__
 *.iml
 *.pyc
 plots
 slides
+__pycache__
