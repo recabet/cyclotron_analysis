@@ -21,7 +21,7 @@ class SimulationConfig:
     # Isotope distribution (IsoSpec)
     # ----------------------------------------
     COVERAGE_PROB: float = 0.99  # Fraction of probability space to cover
-    COMPOUNDS_FILE: str = "../data/compounds/compounds_660000hz_at_10T_long.txt"
+    COMPOUNDS_FILE: str = "data/compounds/compounds_660000hz_at_10T_long.txt"
 
     # ----------------------------------------
     # Signal acquisition parameters
@@ -61,9 +61,9 @@ class SimulationConfig:
     # ----------------------------------------
     # Output file names
     # ----------------------------------------
-    FID_H5: str = "../data/waves/fid/fid_levels.h5"
-    FFT_H5: str = "../data/waves/fft/fft_full_spectra.h5"
-    SEGMENTS_H5: str = "../data/waves/segments/training_segments_{n_high}.h5"
+    FID_H5: str = "data/waves/fid/fid_levels.h5"
+    FFT_H5: str = "data/waves/fft/fft_full_spectra.h5"
+    SEGMENTS_H5: str = "data/waves/segments/training_segments_{n_high}.h5"
 
     # ----------------------------------------
     # Peak segmentation parameters
@@ -116,9 +116,9 @@ class TrainingConfig:
     # TEST_RATIO is 1 - TRAIN_RATIO - VAL_RATIO
 
     # Paths
-    H5_PATH: str = "../data/waves/segments/training_segments_8192.h5"
+    H5_PATH: str = "data/waves/segments/training_segments_8192.h5"
     X_KEY: str = "fft_low"
     Y_KEY: str = "fft_hr"
 
     # Output
-    MODEL_SAVE_PATH: str = "../weights/best_lstm_seq2seq.pt"
+    MODEL_SAVE_PATH: str = "weights/best_lstm_seq2seq.pt"
