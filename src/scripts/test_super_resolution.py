@@ -1,14 +1,15 @@
-import matplotlib.pyplot as plt
+
 import h5py
 import numpy as np
 import torch
 from  torch.utils.data import DataLoader
 import os
+import matplotlib.pyplot as plt
 
-from src.models.lstm_seq2seq import LSTMSeq2Seq
+from src.models import LSTMSeq2Seq
 from src.config import settings
-from src.training.dataset import H5SpectraDataset
-from src.training.metrics import metrics_np
+from src.training import H5SpectraDataset
+from src.training import metrics_np
 
 
 config = settings.TrainingConfig()
@@ -120,8 +121,6 @@ def test():
         plt.close(fig)
 
     print("✅ All inference figures saved.")
-
-import matplotlib.pyplot as plt
 
 def plot_xb_yb(xb, yb, sample_idx=0):
     """
