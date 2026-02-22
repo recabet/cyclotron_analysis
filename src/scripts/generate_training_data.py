@@ -13,18 +13,13 @@ import os
 import numpy as np
 import h5py
 
-from src.config.settings import SimulationConfig
-from src.isotope.loader import load_compounds
-from src.isotope.converter import process_all_compounds
-from src.signal.fid import damping_envelope, kaiser_window, generate_fid
-from src.signal.fft import compute_fft_magnitude
-from src.processing.segmentation import extract_peak_segments
-from src.processing.filtering import iqr_outlier_filter
-from src.io.hdf5_writers import (
-    write_fid_batch,
-    write_fft_batch,
-    save_filtered_segments
-)
+from src.config import SimulationConfig
+from src.isotope import load_compounds, process_all_compounds
+from src.signal_processing import damping_envelope, kaiser_window, generate_fid
+from src.signal_processing import compute_fft_magnitude
+from src.processing import extract_peak_segments, iqr_outlier_filter
+from src.io import write_fid_batch, write_fft_batch, save_filtered_segments
+
 
 
 def generate_and_save_fids(config,
@@ -57,16 +52,25 @@ def generate_and_save_fids(config,
 
     with h5py.File(config.FID_H5, "w") as h5f:
         dset_hr = h5f.create_dataset(
-            "fid_hr", shape=(n_compounds, n_high), dtype="float32",
-            chunks=True, compression=config.COMPRESSION
+            "fid_hr",
+            shape=(n_compounds, n_high),
+            dtype="float32",
+            chunks=True,
+            compression=config.COMPRESSION
         )
         dset_mid = h5f.create_dataset(
-            "fid_mid", shape=(n_compounds, n_mid), dtype="float32",
-            chunks=True, compression=config.COMPRESSION
+            "fid_mid",
+            shape=(n_compounds, n_mid),
+            dtype="float32",
+            chunks=True,
+            compression=config.COMPRESSION
         )
         dset_low = h5f.create_dataset(
-            "fid_low", shape=(n_compounds, n_low), dtype="float32",
-            chunks=True, compression=config.COMPRESSION
+            "fid_low",
+            shape=(n_compounds, n_low),
+            dtype="float32",
+            chunks=True,
+            compression=config.COMPRESSION
         )
 
         # Batch processing
@@ -77,7 +81,8 @@ def generate_and_save_fids(config,
         for i in range(n_compounds):
             fid = generate_fid(
                 frequencies[i], amplitudes[i], t_full, damp,
-                phase=0.0, max_amp=config.MAX_AMPLITUDE,
+                phase=0.0,
+                max_amp=config.MAX_AMPLITUDE,
                 noise_level=config.NOISE_LEVEL
             )
             fid_buffer[buffer_idx] = fid
@@ -116,22 +121,33 @@ def compute_and_save_ffts(config, n_compounds):
         # Frequency axis
         freq_axis = np.fft.rfftfreq(n_target, d=sampling_interval).astype(np.float32)
         fft_file.create_dataset(
-            "fft_freq", data=freq_axis[None, :],
+            "fft_freq",
+            data=freq_axis[None, :],
             compression=config.COMPRESSION
         )
 
         # Datasets for normalized spectra
         dset_hr = fft_file.create_dataset(
-            "fft_hr", shape=(n_compounds, fft_size), dtype="float32",
-            chunks=True, compression=config.COMPRESSION, shuffle=True
+            "fft_hr", shape=(n_compounds, fft_size),
+            dtype="float32",
+            chunks=True,
+            compression=config.COMPRESSION, shuffle=True
         )
         dset_mid = fft_file.create_dataset(
-            "fft_mid", shape=(n_compounds, fft_size), dtype="float32",
-            chunks=True, compression=config.COMPRESSION, shuffle=True
+            "fft_mid",
+            shape=(n_compounds, fft_size),
+            dtype="float32",
+            chunks=True,
+            compression=config.COMPRESSION,
+            shuffle=True
         )
         dset_low = fft_file.create_dataset(
-            "fft_low", shape=(n_compounds, fft_size), dtype="float32",
-            chunks=True, compression=config.COMPRESSION, shuffle=True
+            "fft_low",
+            shape=(n_compounds, fft_size),
+            dtype="float32",
+            chunks=True,
+            compression=config.COMPRESSION,
+            shuffle=True
         )
 
         # Batch buffers
@@ -188,7 +204,6 @@ def extract_and_filter_peaks(config, formulas):
 
     print(f"  Loaded spectra: HR {spec_hr.shape}, MID {spec_mid.shape}, LOW {spec_low.shape}")
 
-    # Extract peak regions
     seg_hr, seg_mid, seg_low, spans, max_len = extract_peak_segments(
         spec_hr, spec_mid, spec_low,
         k_sigma=config.PEAK_K_SIGMA,
@@ -199,18 +214,15 @@ def extract_and_filter_peaks(config, formulas):
         pad_value=0.0,
     )
 
-    # Calculate segment lengths
     lengths = np.array([e - s if s is not None else 0 for s, e in spans])
     print(f"  Peak regions extracted. Max length: {max_len} bins")
 
-    # Filter outliers using IQR
     keep_mask, drop_mask, lower, upper = iqr_outlier_filter(
         lengths, k=config.IQR_K
     )
     print(f"  IQR outlier detection: lower={lower:.1f}, upper={upper:.1f}")
     print(f"  Keep: {keep_mask.sum()}, Drop: {drop_mask.sum()}")
 
-    # Save filtered training data
     save_filtered_segments(
         config, formulas, fft_freq,
         seg_hr, seg_mid, seg_low,
@@ -235,7 +247,7 @@ def main():
     print(f"  Output directory: data/")
     print("=" * 60 + "\n")
 
-    # Step 1: Load compounds and compute frequencies
+
     formulas, masses, _, rel_abund = load_compounds(
         config.COMPOUNDS_FILE, coverage=config.COVERAGE_PROB
     )
@@ -245,13 +257,10 @@ def main():
         config.ION_CHARGE, config.ELECTRON_CHARGE
     )
 
-    # Step 2: Generate FIDs
     generate_and_save_fids(config, formulas, frequencies, rel_abund)
 
-    # Step 3: Compute FFTs
     compute_and_save_ffts(config, len(formulas))
 
-    # Step 4: Extract peaks and create training dataset
     extract_and_filter_peaks(config, formulas)
 
     print("\n" + "=" * 60)
