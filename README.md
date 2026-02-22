@@ -100,6 +100,18 @@ Activate environment:
 ```bash
 source .venv/bin/activate
 ```
+
+First, you must set upb the save directories.
+Run:
+```bash
+mkdir data/waves
+mkdir data/waves/fft
+mkdir data/waves/fid
+mkdir data/waves/segments
+mkdir plots
+mkdir weights
+```
+
 Run:
 
 ```bash
