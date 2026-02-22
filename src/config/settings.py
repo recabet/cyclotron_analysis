@@ -27,7 +27,7 @@ class SimulationConfig:
     # Signal acquisition parameters
     # ----------------------------------------
     SAMPLING_RATE: float = 1e6  # Hz
-    N_POINTS_FID: int = 8192  # 65536 points
+    N_POINTS_FID: int = 8192  # 8192 points
     ZERO_FILL_FACTOR: int = 2  # Zero-padding for FFT (2 = double)
     DAMPING_FINAL_AMP: float = 0.01  # Relative amplitude at end of FID
 
