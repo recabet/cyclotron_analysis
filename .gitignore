@@ -7,3 +7,5 @@ figures
 __pycahce__
 *.iml
 *.pyc
+plots
+slides
