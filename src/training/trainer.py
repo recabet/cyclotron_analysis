@@ -44,7 +44,7 @@ def train_one_epoch(model,
     for i, (xb, yb) in enumerate(train_loader, start=1):
         xb = xb.to(device, non_blocking=True).float().contiguous()
         yb = yb.to(device, non_blocking=True).float().contiguous()
-        print(f"Batch {i}/{len(train_loader)}")  # <-- print step i/j
+        print(f"Batch {i}/{len(train_loader)}")
 
         optimizer.zero_grad(set_to_none=True)
         y_hat = model(xb)
@@ -63,7 +63,7 @@ def validate(model, val_loader, criterion, device):
         for i, (xb, yb) in enumerate(val_loader, start=1):
             xb = xb.to(device, non_blocking=True).float().contiguous()
             yb = yb.to(device, non_blocking=True).float().contiguous()
-            print(f"Validation Batch {i}/{len(val_loader)}")  # optional
+            print(f"Validation Batch {i}/{len(val_loader)}")
             y_hat = model(xb)
             loss = criterion(y_hat, yb)
             total_loss += loss.item() * xb.size(0)
@@ -80,7 +80,18 @@ def fit(model,
         patience: int,
         model_save_path: str,
         clip_norm: float = 1.0,
-        gui=None):
+        gui=None,
+        epoch_end_callback=None):
+    """
+    Train the model for the given number of epochs with early stopping.
+
+    Parameters
+    ----------
+    epoch_end_callback : callable, optional
+        Called at the end of every epoch after the GUI update.
+        Signature: callback(epoch: int, model: nn.Module, device)
+        Intended use: spectra preview plots, custom logging, etc.
+    """
 
     early_stopping = EarlyStopping(patience=patience, min_delta=1e-7)
     best_val_loss = float('inf')
@@ -128,11 +139,18 @@ def fit(model,
                 print("Early stopping triggered.")
                 if gui:
                     gui.set_status("Early stopping triggered", "red")
+                # Fire callback one last time before breaking
+                if epoch_end_callback is not None:
+                    epoch_end_callback(epoch, model, device)
                 break
 
         # GUI update
         if gui:
             gui.update(epoch, train_loss, val_loss, status)
+
+        # Spectra / custom callback
+        if epoch_end_callback is not None:
+            epoch_end_callback(epoch, model, device)
 
     model.load_state_dict(torch.load(model_save_path, map_location=device))
 
