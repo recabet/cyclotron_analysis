@@ -21,7 +21,7 @@ class SimulationConfig:
     # Isotope distribution (IsoSpec)
     # ----------------------------------------
     COVERAGE_PROB: float = 0.99  # Fraction of probability space to cover
-    COMPOUNDS_FILE: str = "data/compounds/compounds_660000hz_at_10T_long.txt"
+    COMPOUNDS_FILE: str = "../data/compounds/compounds_660000hz_at_10T_long.txt"
 
     # ----------------------------------------
     # Signal acquisition parameters
@@ -86,7 +86,7 @@ class TrainingConfig:
     SEED: int = 42
     BATCH_SIZE: int = 16
     LEARNING_RATE: float = 1e-3
-    EPOCHS: int = 10
+    EPOCHS: int = 100
     PATIENCE: int = 5
 
     # Model architecture
@@ -101,7 +101,7 @@ class TrainingConfig:
     ATTN_LAYERS: int = 2
 
     # Loss function
-    LOSS: str = "mse"  # "mse", "mae", "huber"
+    LOSS: str = "huber"  # "mse", "mae", "huber"
     HUBER_DELTA: float = 0.05
 
     # Optimizer
