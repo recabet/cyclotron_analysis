@@ -9,3 +9,6 @@ figures
 plots
 slides
 __pycache__
+*.logs
+*.npz
+test_*
