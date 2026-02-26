@@ -25,7 +25,7 @@ from src.training import H5SpectraDataset
 # ------------------------------------------------------------
 # Plotting
 # ------------------------------------------------------------
-def save_overlay_plot(y, pred, save_path, zoom_ratio=0.2):
+def save_overlay_plot(x, y, pred, save_path, zoom_ratio=0.2):
     seq_len = len(y)
 
     zoom_size = int(seq_len * zoom_ratio)
@@ -34,11 +34,12 @@ def save_overlay_plot(y, pred, save_path, zoom_ratio=0.2):
     end = min(center + zoom_size // 2, seq_len)
 
     plt.figure(figsize=(12, 5))
-    plt.plot(y, label="Ground Truth", linewidth=1)
+    plt.plot(x, label="Input (Low-Res)", linewidth=1, alpha=0.8)
+    plt.plot(y, label="Ground Truth (High-Res)", linewidth=1)
     plt.plot(pred, label="Prediction", linewidth=1)
     plt.xlim(start, end)
     plt.legend()
-    plt.title("Ground Truth vs Prediction (Zoomed)")
+    plt.title("Input vs Ground Truth vs Prediction (Zoomed)")
     plt.tight_layout()
     plt.savefig(save_path, dpi=150)
     plt.close()
@@ -140,11 +141,15 @@ def main():
 
             pred = model(xb)
 
+            x_np = xb.cpu().numpy()[0, :, 0]
             y_np = yb.cpu().numpy()[0, :, 0]
             pred_np = pred.cpu().numpy()[0, :, 0]
 
             save_path = f"test_plots/sample_{i:03d}.png"
-            save_overlay_plot(y_np, pred_np, save_path)
+
+            save_overlay_plot(x_np, y_np, pred_np, save_path)
+
+
 
             print(f"Saved: {save_path}")
 
