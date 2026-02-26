@@ -115,17 +115,20 @@ def main():
                                 config.X_KEY,
                                 config.Y_KEY,
                                 indices=train_idx,
-                                normalize=False)
+                                normalize=True,
+                                interval_size=256)
     val_ds = H5SpectraDataset(config.H5_PATH,
                               config.X_KEY,
                               config.Y_KEY,
                               indices=val_idx,
-                              normalize=False)
+                              normalize=True,
+                              interval_size=256)
     test_ds = H5SpectraDataset(config.H5_PATH,
                                config.X_KEY,
                                config.Y_KEY,
                                indices=test_idx,
-                               normalize=False)
+                               normalize=True,
+                               interval_size=256)
 
     sample_x, sample_y = train_ds[0]
     print(f"x shape: {sample_x.shape}  y shape: {sample_y.shape}")
