@@ -9,7 +9,6 @@ Only runs on the held-out test set.
 import os
 import numpy as np
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
 import h5py
 
@@ -25,21 +24,29 @@ from src.training import H5SpectraDataset
 # ------------------------------------------------------------
 # Plotting
 # ------------------------------------------------------------
-def save_overlay_plot(x, y, pred, save_path, zoom_ratio=0.2):
+def save_overlay_plot(x, y, pred, save_path, zoom_ratio=1.0):
     seq_len = len(y)
 
+    # 🔥 Find actual peak location
+    peak_idx = np.argmax(y)
+
     zoom_size = int(seq_len * zoom_ratio)
-    center = seq_len // 2
-    start = max(center - zoom_size // 2, 0)
-    end = min(center + zoom_size // 2, seq_len)
+
+    start = max(peak_idx - zoom_size // 2, 0)
+    end = min(peak_idx + zoom_size // 2, seq_len)
 
     plt.figure(figsize=(12, 5))
     plt.plot(x, label="Input (Low-Res)", linewidth=1, alpha=0.8)
     plt.plot(y, label="Ground Truth (High-Res)", linewidth=1)
     plt.plot(pred, label="Prediction", linewidth=1)
+
     plt.xlim(start, end)
+
+    # mark peak
+    plt.axvline(peak_idx, linestyle="--", alpha=0.5)
+
     plt.legend()
-    plt.title("Input vs Ground Truth vs Prediction (Zoomed)")
+    plt.title("Input vs Ground Truth vs Prediction (Peak Zoom)")
     plt.tight_layout()
     plt.savefig(save_path, dpi=150)
     plt.close()
@@ -64,7 +71,7 @@ def main():
     # ------------------------------------------------------------
     print("\nRecreating dataset split (no leakage)...")
 
-    with h5py.File(config.H5_PATH, "r") as f:
+    with h5py.File(config.TEST_H5_PATH, "r") as f:
         N = len(f[config.X_KEY])
 
     all_idx = np.arange(N)
@@ -85,10 +92,11 @@ def main():
     interval_size = 256   # must match training
 
     test_ds = H5SpectraDataset(
-        config.H5_PATH,
+        config.TEST_H5_PATH,
         config.X_KEY,
         config.Y_KEY,
         indices=test_idx,   # ✅ CRITICAL FIX
+        centered=True,
         normalize=True,
         interval_size=interval_size,
     )
@@ -129,7 +137,8 @@ def main():
     # Inference
     # ------------------------------------------------------------
     os.makedirs("test_plots", exist_ok=True)
-    n_samples = 10
+    os.makedirs("test_plots/quarter",exist_ok=True)
+    n_samples = 50
 
     with torch.no_grad():
         for i, (xb, yb) in enumerate(test_loader):
@@ -145,11 +154,9 @@ def main():
             y_np = yb.cpu().numpy()[0, :, 0]
             pred_np = pred.cpu().numpy()[0, :, 0]
 
-            save_path = f"test_plots/sample_{i:03d}.png"
+            save_path = f"test_plots/quarter/sample_quarter{i:03d}.png"
 
             save_overlay_plot(x_np, y_np, pred_np, save_path)
-
-
 
             print(f"Saved: {save_path}")
 

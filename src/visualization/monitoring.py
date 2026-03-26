@@ -9,7 +9,7 @@ import numpy as np
 import os
 
 PLOTS_DIR = "plots"
-os.makedirs(PLOTS_DIR, exist_ok=True)
+os.makedirs(PLOTS_DIR, exist_ok=True,)
 
 
 class HeadlessMonitor:

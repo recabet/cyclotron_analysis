@@ -21,13 +21,13 @@ class SimulationConfig:
     # Isotope distribution (IsoSpec)
     # ----------------------------------------
     COVERAGE_PROB: float = 0.99  # Fraction of probability space to cover
-    COMPOUNDS_FILE: str = "../data/compounds/compounds_660000hz_at_10T_long.txt"
+    COMPOUNDS_FILE: str = "data/compounds/compounds_660000hz_at_10T_long.txt"
 
     # ----------------------------------------
     # Signal acquisition parameters
     # ----------------------------------------
     SAMPLING_RATE: float = 1e6  # Hz
-    N_POINTS_FID: int = 8192  # 8192 points
+    N_POINTS_FID: int = 65536  # 8192 points
     ZERO_FILL_FACTOR: int = 2  # Zero-padding for FFT (2 = double)
     DAMPING_FINAL_AMP: float = 0.01  # Relative amplitude at end of FID
 
@@ -116,9 +116,10 @@ class TrainingConfig:
     # TEST_RATIO is 1 - TRAIN_RATIO - VAL_RATIO
 
     # Paths
-    H5_PATH: str = "data/waves/segments/training_segments_8192.h5"
+    H5_PATH: str = "data/waves/segments/training_segments_65536.h5"
+    TEST_H5_PATH: str = "data/waves/test/training_segments_65536_test.h5"
     X_KEY: str = "fft_low"
     Y_KEY: str = "fft_hr"
 
     # Output
-    MODEL_SAVE_PATH: str = "weights/best_lstm_seq2seq.pt"
+    MODEL_SAVE_PATH: str = "weights/best_lstm_zoomed_seq2seq_65536.pt"

@@ -40,3 +40,27 @@ def normalize_spectrum(spectrum: np.ndarray) -> np.ndarray:
     else:
         # Per-row normalization
         return spectrum / spectrum.max(axis=1, keepdims=True)
+    
+    
+    
+def extract_middle_segment(signal: np.ndarray,
+                           start_ratio: float = 0.25,
+                           end_ratio: float = 0.5) -> np.ndarray:
+    """
+    Extract a middle segment of the signal (around the 2nd quartile)
+    to avoid noisy beginning and end regions.
+
+    Args:
+        signal: 1D FID signal
+        start_ratio: Start position as fraction of signal length
+        end_ratio: End position as fraction of signal length
+
+    Returns:
+        Cropped signal segment
+    """
+    n = len(signal)
+
+    start = int(n * start_ratio)
+    end = int(n * end_ratio)
+
+    return signal[start:end]

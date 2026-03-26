@@ -15,8 +15,12 @@ import h5py
 
 from src.config import SimulationConfig
 from src.isotope import load_compounds, process_all_compounds
-from src.signal_processing import damping_envelope, kaiser_window, generate_fid
-from src.signal_processing import compute_fft_magnitude
+from src.signal_processing import (damping_envelope,
+                                   kaiser_window,
+                                   generate_fid,
+                                   extract_middle_segment,
+                                   compute_fft_magnitude)
+
 from src.processing import extract_peak_segments, iqr_outlier_filter
 from src.io import write_fid_batch, write_fft_batch, save_filtered_segments
 
@@ -105,74 +109,62 @@ def generate_and_save_fids(config,
     print(f"\n✅ FID signals saved to '{config.FID_H5}'")
 
 
-def compute_and_save_ffts(config, n_compounds):
+def compute_and_save_ffts (config, n_compounds):
     """Step 2: Compute and save FFT magnitudes."""
     print("\n" + "=" * 60)
     print("STEP 2/3: Computing FFT magnitudes")
     print("=" * 60)
-
+    
     n_target = config.N_POINTS_FID * config.ZERO_FILL_FACTOR
     fft_size = n_target // 2 + 1
     sampling_interval = 1.0 / config.SAMPLING_RATE
-
+    
     with h5py.File(config.FID_H5, "r") as fid_file, \
             h5py.File(config.FFT_H5, "w") as fft_file:
-
+        
         # Frequency axis
         freq_axis = np.fft.rfftfreq(n_target, d=sampling_interval).astype(np.float32)
         fft_file.create_dataset(
-            "fft_freq",
-            data=freq_axis[None, :],
-            compression=config.COMPRESSION
+            "fft_freq", data=freq_axis[None, :], compression=config.COMPRESSION
         )
-
+        
         # Datasets for normalized spectra
         dset_hr = fft_file.create_dataset(
-            "fft_hr", shape=(n_compounds, fft_size),
-            dtype="float32",
-            chunks=True,
-            compression=config.COMPRESSION, shuffle=True
+            "fft_hr", shape=(n_compounds, fft_size), dtype="float32",
+            chunks=True, compression=config.COMPRESSION, shuffle=True
         )
         dset_mid = fft_file.create_dataset(
-            "fft_mid",
-            shape=(n_compounds, fft_size),
-            dtype="float32",
-            chunks=True,
-            compression=config.COMPRESSION,
-            shuffle=True
+            "fft_mid", shape=(n_compounds, fft_size), dtype="float32",
+            chunks=True, compression=config.COMPRESSION, shuffle=True
         )
         dset_low = fft_file.create_dataset(
-            "fft_low",
-            shape=(n_compounds, fft_size),
-            dtype="float32",
-            chunks=True,
-            compression=config.COMPRESSION,
-            shuffle=True
+            "fft_low", shape=(n_compounds, fft_size), dtype="float32",
+            chunks=True, compression=config.COMPRESSION, shuffle=True
         )
-
+        
         # Batch buffers
         batch_size = config.BATCH_SIZE
         buf_hr = np.zeros((batch_size, fft_size), dtype=np.float32)
         buf_mid = np.zeros((batch_size, fft_size), dtype=np.float32)
         buf_low = np.zeros((batch_size, fft_size), dtype=np.float32)
         buf_idx = 0
-
+        
         for i in range(n_compounds):
             sig_hr = fid_file["fid_hr"][i]
             sig_mid = fid_file["fid_mid"][i]
             sig_low = fid_file["fid_low"][i]
-
+            
             _, mag_hr = compute_fft_magnitude(sig_hr, n_target, sampling_interval)
             _, mag_mid = compute_fft_magnitude(sig_mid, n_target, sampling_interval)
             _, mag_low = compute_fft_magnitude(sig_low, n_target, sampling_interval)
-
+            
             buf_hr[buf_idx] = mag_hr
             buf_mid[buf_idx] = mag_mid
             buf_low[buf_idx] = mag_low
             buf_idx += 1
-
-            print(f"  FFT computed: {i + 1:5d} / {n_compounds}", end="\r")
-
+            
+            print(f" FFT computed: {i + 1:5d} / {n_compounds}", end="\r")
+            
             if buf_idx == batch_size or i + 1 == n_compounds:
                 end = i + 1
                 start = end - buf_idx
@@ -185,10 +177,11 @@ def compute_and_save_ffts(config, n_compounds):
                 buf_hr = np.zeros((batch_size, fft_size), dtype=np.float32)
                 buf_mid = np.zeros((batch_size, fft_size), dtype=np.float32)
                 buf_low = np.zeros((batch_size, fft_size), dtype=np.float32)
-
+    
     print(f"\n✅ Normalized FFT spectra saved to '{config.FFT_H5}'")
-
-
+    print(f"    FFT lengths: HR={len(mag_hr)}, MID={len(mag_mid)}, LOW={len(mag_low)}")
+    
+    
 def extract_and_filter_peaks(config, formulas):
     """Step 3: Extract peak regions, filter outliers, save training data."""
     print("\n" + "=" * 60)

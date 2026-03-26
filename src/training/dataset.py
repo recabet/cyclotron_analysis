@@ -21,6 +21,7 @@ class H5SpectraDataset(Dataset):
                  x_key: str,
                  y_key: str,
                  interval_size: int = None,
+                 centered:bool=False,
                  indices: np.ndarray = None,
                  normalize: bool = False,
                  eps: float = 1e-12):
@@ -31,6 +32,7 @@ class H5SpectraDataset(Dataset):
         self.x_key = x_key
         self.y_key = y_key
         self.interval_size = interval_size
+        self.centered = centered
         self.normalize = normalize
         self.eps = eps
         self._file = None
@@ -78,19 +80,50 @@ class H5SpectraDataset(Dataset):
 
         return window
 
+    def _extract_quarter_peak_window(self, arr, peak_idx):
+        """
+        Extract interval where peak is located at 1/4 of the window.
+        Pads with zeros if necessary.
+        """
+        L = len(arr)
+        quarter = self.interval_size // 4
+
+        # Make peak appear at 1/4 position
+        start = peak_idx - quarter
+        end = start + self.interval_size
+
+        pad_left = max(0, -start)
+        pad_right = max(0, end - L)
+
+        start = max(start, 0)
+        end = min(end, L)
+
+        window = arr[start:end]
+
+        if pad_left > 0 or pad_right > 0:
+            window = np.pad(window,
+                            (pad_left, pad_right),
+                            mode="constant")
+
+        return window
+
     def __getitem__(self, idx):
         self._ensure_open()
 
         i = int(self.indices[idx])
 
-        x = self._file[self.x_key][i]  # (8192,)
-        y = self._file[self.y_key][i]  # (8192,)
+        x = self._file[self.x_key][i]  # (1024,)-> 256
+        y = self._file[self.y_key][i]  # (16384,)->4096
 
         # ---- Optional interval mode ----
         if self.interval_size is not None:
             peak_idx = np.argmax(y)
-            x = self._extract_centered_window(x, peak_idx)
-            y = self._extract_centered_window(y, peak_idx)
+            if self.centered:
+                x = self._extract_centered_window(x, peak_idx)
+                y = self._extract_centered_window(y, peak_idx)
+            else:
+                x = self._extract_quarter_peak_window(x, peak_idx)
+                y = self._extract_quarter_peak_window(y, peak_idx)
 
         # ---- Optional normalization ----
         if self.normalize:
