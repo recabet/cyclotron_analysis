@@ -112,8 +112,8 @@ class H5SpectraDataset(Dataset):
 
         i = int(self.indices[idx])
 
-        x = self._file[self.x_key][i]  # (1024,)-> 256
-        y = self._file[self.y_key][i]  # (16384,)->4096
+        x = self._file[self.x_key][i]
+        y = self._file[self.y_key][i]
 
         # ---- Optional interval mode ----
         if self.interval_size is not None:

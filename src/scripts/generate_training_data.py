@@ -18,7 +18,6 @@ from src.isotope import load_compounds, process_all_compounds
 from src.signal_processing import (damping_envelope,
                                    kaiser_window,
                                    generate_fid,
-                                   extract_middle_segment,
                                    compute_fft_magnitude)
 
 from src.processing import extract_peak_segments, iqr_outlier_filter

@@ -137,7 +137,7 @@ def main():
     # Inference
     # ------------------------------------------------------------
     os.makedirs("test_plots", exist_ok=True)
-    os.makedirs("test_plots/quarter",exist_ok=True)
+    os.makedirs("test_plots/normal",exist_ok=True)
     n_samples = 50
 
     with torch.no_grad():
@@ -154,7 +154,7 @@ def main():
             y_np = yb.cpu().numpy()[0, :, 0]
             pred_np = pred.cpu().numpy()[0, :, 0]
 
-            save_path = f"test_plots/quarter/sample_quarter{i:03d}.png"
+            save_path = f"test_plots/normal/sample_{i:03d}.png"
 
             save_overlay_plot(x_np, y_np, pred_np, save_path)
 
