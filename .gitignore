@@ -10,5 +10,6 @@ plots
 slides
 __pycache__
 *.logs
+*.log
 *.npz
 test_*

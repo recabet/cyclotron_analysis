@@ -8,7 +8,7 @@ import matplotlib.gridspec as gridspec
 import numpy as np
 import os
 
-PLOTS_DIR = "plots"
+PLOTS_DIR = "plots/high_res"
 os.makedirs(PLOTS_DIR, exist_ok=True,)
 
 

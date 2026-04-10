@@ -84,10 +84,10 @@ class SimulationConfig:
 class TrainingConfig:
     """Hyperparameters and settings for super-resolution training."""
     SEED: int = 42
-    BATCH_SIZE: int = 16
+    BATCH_SIZE: int = 32  # Increased for better GPU utilization
     LEARNING_RATE: float = 1e-3
-    EPOCHS: int = 100
-    PATIENCE: int = 5
+    EPOCHS: int = 200
+    PATIENCE: int = 20  # Increased to avoid premature stopping
 
     # Model architecture
     ENC_HIDDEN: int = 128
@@ -97,18 +97,31 @@ class TrainingConfig:
     DROPOUT: float = 0.1
     BIDIRECTIONAL: bool = True
     USE_ATTN_BRIDGE: bool = True
-    ATTN_HEADS: int = 16
+    ATTN_HEADS: int = 8  # Reduced to increase head_dim from 8 to 16
     ATTN_LAYERS: int = 2
 
     # Loss function
     LOSS: str = "huber"  # "mse", "mae", "huber"
-    HUBER_DELTA: float = 0.05
+    HUBER_DELTA: float = 0.15  # Increased for normalized spectra
 
     # Optimizer
     OPTIMIZER: str = "adamw"
     WEIGHT_DECAY: float = 1e-4
     BETAS: tuple = (0.9, 0.98)
     CLIP_NORM: float = 1.0
+
+    # Training optimization
+    USE_AMP: bool = True  # Enable automatic mixed precision
+    NUM_WORKERS: int = 4  # Number of data loading workers
+    PIN_MEMORY: bool = True  # Enable pinned memory for faster GPU transfer
+    PRELOAD_DATA: bool = True  # Preload H5 data into memory to avoid I/O bottleneck
+
+    # Scheduler / Warmup
+    WARMUP_EPOCHS: int = 10  # Number of warmup epochs
+
+    # Visualization
+    PLOT_EVERY: int = 1
+    N_PREVIEW_SAMPLES: int = 3  # Number of samples to preview
 
     # Data
     TRAIN_RATIO: float = 0.75
@@ -122,4 +135,4 @@ class TrainingConfig:
     Y_KEY: str = "fft_hr"
 
     # Output
-    MODEL_SAVE_PATH: str = "weights/best_lstm_zoomed_seq2seq_65536.pt"
+    MODEL_SAVE_PATH: str = "weights/best_lstm_zoomed_seq2seq_65536_hr.pt"

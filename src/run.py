@@ -11,3 +11,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    # nohup python -m src.run 2>&1 | tee train_opt.log &
+    
+    # FWHM
+    # scipy detect peaks compoare psoition
+    # increase npoints
+    
+    # increase the noise ratio
+    # fine isotopic composition
+    #

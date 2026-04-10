@@ -29,7 +29,8 @@ from src.visualization import (
     PLOTS_DIR,
     HeadlessMonitor,
 )
-# torch.backends.cudnn.enabled = False
+
+torch.set_float32_matmul_precision('high')
 
 
 class SpectraPlotCallback:
@@ -85,9 +86,15 @@ def main():
             props = torch.cuda.get_device_properties(i)
             print(f"    GPU {i}: {props.name}  ({props.total_memory // 1024 ** 2} MB)")
     elif n_gpus == 1:
-        print("    1 GPU detected.")
+        props = torch.cuda.get_device_properties(0)
+        print(f"    1 GPU detected: {props.name}  ({props.total_memory // 1024 ** 2} MB)")
     else:
         print("⚠️   No GPU — running on CPU.")
+
+    amp_active = config.USE_AMP and device.type == "cuda"
+    print(f"Mixed precision (AMP):  {'✅ enabled' if amp_active else '❌ disabled'}")
+    print(f"DataLoader workers:     {config.NUM_WORKERS}")
+    print(f"Batch size:             {config.BATCH_SIZE}")
 
     print("\n" + "=" * 60)
     print("LOADING DATASET")
@@ -111,28 +118,32 @@ def main():
     print("CREATING DATALOADERS")
     print("=" * 60)
 
+    # Dataset is preloaded into RAM at construction, enabling num_workers > 0
     train_ds = H5SpectraDataset(config.H5_PATH,
                                 config.X_KEY,
                                 config.Y_KEY,
                                 indices=train_idx,
                                 normalize=True,
                                 centered=True,
-                                interval_size=256)
+                                interval_size=512,
+                                preload=config.PRELOAD_DATA)
     val_ds = H5SpectraDataset(config.H5_PATH,
                               config.X_KEY,
                               config.Y_KEY,
                               indices=val_idx,
                               normalize=True,
                               centered=True,
-                              interval_size=256)
-    
+                              interval_size=512,
+                              preload=config.PRELOAD_DATA)
+
     test_ds = H5SpectraDataset(config.H5_PATH,
                                config.X_KEY,
                                config.Y_KEY,
                                indices=test_idx,
                                normalize=True,
                                centered=True,
-                               interval_size=256)
+                               interval_size=512,
+                               preload=config.PRELOAD_DATA)
     sample_x, sample_y = train_ds[0]
     print(f"x shape: {sample_x.shape}  y shape: {sample_y.shape}")
 
@@ -140,18 +151,30 @@ def main():
     print(f"Per-GPU batch size:   {config.BATCH_SIZE}")
     print(f"Effective batch size: {effective_batch}  (×{max(n_gpus, 1)} GPUs)")
 
+    # pin_memory=True speeds up CPU→GPU transfer with preloaded data
+    pin_memory = config.PIN_MEMORY and device.type == "cuda"
+
     train_loader = DataLoader(train_ds,
                               batch_size=effective_batch,
-                              shuffle=False,
-                              num_workers=0)
+                              shuffle=True,
+                              num_workers=config.NUM_WORKERS,
+                              pin_memory=pin_memory,
+                              persistent_workers=config.NUM_WORKERS > 0,
+                              prefetch_factor=4 if config.NUM_WORKERS > 0 else None)
     val_loader = DataLoader(val_ds,
                             batch_size=effective_batch,
                             shuffle=False,
-                            num_workers=0)
+                            num_workers=config.NUM_WORKERS,
+                            pin_memory=pin_memory,
+                            persistent_workers=config.NUM_WORKERS > 0,
+                            prefetch_factor=4 if config.NUM_WORKERS > 0 else None)
     test_loader = DataLoader(test_ds,
                              batch_size=effective_batch,
                              shuffle=False,
-                             num_workers=0)
+                             num_workers=config.NUM_WORKERS,
+                             pin_memory=pin_memory,
+                             persistent_workers=config.NUM_WORKERS > 0,
+                             prefetch_factor=4 if config.NUM_WORKERS > 0 else None)
 
     print(f"Train batches: {len(train_loader)}  Val batches: {len(val_loader)}")
 
@@ -204,11 +227,24 @@ def main():
     else:
         optimizer = torch.optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
 
-    print(f"Loss: {config.LOSS}  Optimizer: {config.OPTIMIZER}")
-    print(f"LR: {config.LEARNING_RATE}  Epochs: {config.EPOCHS}  Patience: {config.PATIENCE}")
+    # OneCycleLR: warmup (10% of training) then cosine annealing
+    # Steps per-batch, handles full LR schedule automatically
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        optimizer,
+        max_lr=config.LEARNING_RATE,
+        epochs=config.EPOCHS,
+        steps_per_epoch=len(train_loader),
+        pct_start=0.1,  # 10% warmup
+        anneal_strategy="cos",
+    )
 
-    plot_every = getattr(config, "PLOT_EVERY", 1)
-    n_preview_samples = getattr(config, "N_PREVIEW_SAMPLES", 3)
+    print(f"Loss:      {config.LOSS} (delta={config.HUBER_DELTA})")
+    print(f"Optimizer: {config.OPTIMIZER}")
+    print(f"LR:        {config.LEARNING_RATE}  Epochs: {config.EPOCHS}  Patience: {config.PATIENCE}")
+    print(f"Scheduler: OneCycleLR with 10% warmup ({int(config.EPOCHS * 0.1)} warmup epochs)")
+
+    plot_every = config.PLOT_EVERY
+    n_preview_samples = config.N_PREVIEW_SAMPLES
 
     monitor = HeadlessMonitor(total_epochs=config.EPOCHS, model_name="LSTM Seq2Seq")
     plotter = HeadlessSpectraPlotter(plot_every=plot_every, n_samples=n_preview_samples)
@@ -234,6 +270,8 @@ def main():
             clip_norm=config.CLIP_NORM,
             gui=monitor,
             epoch_end_callback=spectra_cb,
+            scheduler=scheduler,
+            use_amp=amp_active,
         )
         print(f"\n✅ Training complete. Best val loss: {best_val_loss:.6e}")
 

@@ -1,4 +1,4 @@
-h5py~=3.15.1
+h5py~=3.16
 numpy~=2.4.2
 torch==2.10.0
 IsoSpecPy~=2.3.3
