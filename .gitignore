@@ -1,15 +1,13 @@
-
+docs
 data/waves
+data/lmdb
 weights
-figures
 .venv
 .idea
 *.iml
 *.pyc
-plots
 slides
 __pycache__
 *.logs
 *.log
 *.npz
-test_*

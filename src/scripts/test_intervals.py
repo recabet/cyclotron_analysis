@@ -94,7 +94,7 @@ def test(interval_size=None):
     for k, v in metrics.items():
         print(f"{k}: {v:.6e}" if isinstance(v, float) else f"{k}: {v}")
 
-    # Save inference plots
+    # Save inference train_plots
     save_dir = "../figures/test_infer"
     os.makedirs(save_dir, exist_ok=True)
 
@@ -119,7 +119,7 @@ def test(interval_size=None):
         plt.savefig(os.path.join(save_dir, f"infer_{i:04d}.png"), dpi=150)
         plt.close()
 
-    print("✅ Inference plots saved.")
+    print("✅ Inference train_plots saved.")
 
 
 # =========================================================

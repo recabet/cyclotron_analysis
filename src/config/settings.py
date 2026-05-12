@@ -51,12 +51,24 @@ class SimulationConfig:
     # ----------------------------------------
     # Batch processing (memory management)
     # ----------------------------------------
-    BATCH_SIZE: int = 1000  # Number of compounds to process at once
+    BATCH_SIZE: int = 4000  # Number of compounds to process at once
 
     # ----------------------------------------
     # HDF5 compression
     # ----------------------------------------
-    COMPRESSION: str = "lzf"  # 'lzf' (faster) or 'gzip' (smaller)
+    COMPRESSION: str = "lzf"  # For backward compatibility (mirrors COMPRESSION_ALGORITHM)
+    COMPRESSION_ALGORITHM: str = "lzf"  # 'lzf' (faster) or 'gzip' (smaller)
+    COMPRESSION_LEVEL: int = 0  # Not used for lzf
+
+    # ----------------------------------------
+    # Narrowband (frequency-shift) approach
+    # ----------------------------------------
+    CLUSTER_TOLERANCE_HZ: float = 250.0  # Max gap to keep peaks in same cluster [Hz]
+                                         # Peaks separated by >250 Hz are separate samples
+                                         # (Isotope peaks are ~246 Hz apart, fine structure ~0.1-1 Hz)
+                                         # Set to ~250 Hz to preserve complete isotopic clusters
+    FREQUENCY_RESOLUTION_TARGET: float = 2.0  # Target resolution per bin [Hz] (was 1.0, changed to 4x reduce file size)
+    CLUSTER_BATCH_SIZE: int = 5000  # Batch size for narrowband cluster writing (was 1000)
 
     # ----------------------------------------
     # Output file names
@@ -64,6 +76,11 @@ class SimulationConfig:
     FID_H5: str = "data/waves/fid/fid_levels.h5"
     FFT_H5: str = "data/waves/fft/fft_full_spectra.h5"
     SEGMENTS_H5: str = "data/waves/segments/training_segments_{n_high}.h5"
+    NARROWBAND_H5: str = "data/waves/narrowband/narrowband_clusters_v2_optimized.h5"  # new: 33k samples, 264MB
+
+    # LMDB directories
+    LMDB_DIR: str = "data/lmdb/narrowband"  # LMDB database directory for narrowband data
+    TRAIN_LMDB_DIR: str = "data/lmdb/training_segments"  # LMDB database directory for full-spectrum training data
 
     # ----------------------------------------
     # Peak segmentation parameters
@@ -81,13 +98,79 @@ class SimulationConfig:
 
 
 @dataclass(frozen=True)
+class ClusterConfig:
+    """Configuration for isotope cluster super-resolution using prof_v2 method."""
+    # ----------------------------------------
+    # Signal acquisition - high res (full acquisition)
+    # ----------------------------------------
+    N_POINTS_FID: int = 2048  # Full acquisition time points
+    SAMPLING_RATE: float = 1e6  # Hz
+
+    # ----------------------------------------
+    # Signal acquisition - low res (truncated acquisition)
+    # ----------------------------------------
+    ACQUISITION_REDUCTION_FACTOR: int = 8  # Low-res uses 1/N of full points (8x = 256 pts instead of 2048)
+
+    # ----------------------------------------
+    # Zero-filling and FFT
+    # ----------------------------------------
+    ZERO_FILL_FACTOR: int = 2  # Zero-pad to FFT_SIZE * 2
+
+    # Computed values (access as properties or methods)
+    def fft_size(self) -> int:
+        return self.N_POINTS_FID * self.ZERO_FILL_FACTOR
+
+    def fft_output_size(self) -> int:
+        return self.N_POINTS_FID  # 2048 output points
+
+    def lr_points(self) -> int:
+        return self.N_POINTS_FID // self.ACQUISITION_REDUCTION_FACTOR
+
+    # ----------------------------------------
+    # Windowing and damping (prof_v2 defaults)
+    # ----------------------------------------
+    KAISER_BETA: float = 5.0  # From professor's original
+    DAMPING_FINAL_AMP: float = 0.005  # Light damping preserves fine structure
+
+    # ----------------------------------------
+    # Noise
+    # ----------------------------------------
+    NOISE_LEVEL: float = 0.01  # Noise std relative to max amplitude
+
+    # ----------------------------------------
+    # Isotope distribution (IsoSpec)
+    # ----------------------------------------
+    COVERAGE_PROB: float = 0.99  # Fraction of probability space to cover
+    COMPOUNDS_FILE: str = "data/compounds/compounds_660000hz_at_10T_long.txt"
+
+    # ----------------------------------------
+    # Output
+    # ----------------------------------------
+    LMDB_DIR: str = "data/lmdb/cluster_prof_v2"
+    PLOT_DIR: str = "figures/cluster_prof_v2"
+    MAX_AMPLITUDE: float = 1.0  # Global scaling for peak heights
+
+    # ----------------------------------------
+    # Train/val/test split
+    # ----------------------------------------
+    TRAIN_RATIO: float = 0.75
+    VAL_RATIO: float = 0.20
+    # TEST_RATIO: 1 - TRAIN_RATIO - VAL_RATIO
+
+    # ----------------------------------------
+    # Batch processing
+    # ----------------------------------------
+    BATCH_SIZE: int = 5000  # Compounds per batch
+
+
+@dataclass(frozen=True)
 class TrainingConfig:
     """Hyperparameters and settings for super-resolution training."""
     SEED: int = 42
     BATCH_SIZE: int = 32  # Increased for better GPU utilization
     LEARNING_RATE: float = 1e-3
     EPOCHS: int = 200
-    PATIENCE: int = 20  # Increased to avoid premature stopping
+    PATIENCE: int = 10  # Increased to avoid premature stopping
 
     # Model architecture
     ENC_HIDDEN: int = 128
@@ -136,3 +219,47 @@ class TrainingConfig:
 
     # Output
     MODEL_SAVE_PATH: str = "weights/best_lstm_zoomed_seq2seq_65536_hr.pt"
+
+
+@dataclass(frozen=True)
+class NarrowbandConfig(TrainingConfig):
+    """Configuration for narrowband (frequency-shifted cluster) super-resolution training."""
+
+    # Override data paths for narrowband HDF5 file
+    H5_PATH: str = "data/waves/narrowband/narrowband_clusters_v2_optimized.h5"
+    TEST_H5_PATH: str = "data/waves/narrowband/narrowband_clusters_test.h5"
+    X_KEY: str = "fft_half"  # Low-resolution input
+    Y_KEY: str = "fft_full"  # High-resolution target
+
+    # LMDB path
+    LMDB_DIR: str = "data/lmdb/narrowband"
+
+    # Narrowband-specific: window size for training
+    # Frequency resolution ~1.92 Hz/bin (at 2.0 Hz target), so 1024 pts ≈ 1966 Hz range
+    # Captures full isotope cluster (typically < 700 Hz spread) with margin
+    INTERVAL_SIZE: int = 1024
+
+    # Batch size - increased for better GPU utilization
+    BATCH_SIZE: int = 32  # Increased from 16 for 12GB GPU
+
+    # Update model save path
+    MODEL_SAVE_PATH: str = "weights/best_narrowband_lstm_seq2seq.pt"
+
+
+@dataclass(frozen=True)
+class ClusterTrainingConfig(TrainingConfig):
+    """Configuration for cluster prof_v2 super-resolution training."""
+
+    # Override data paths for cluster prof_v2 LMDB file
+    H5_PATH: str = "data/lmdb/cluster_prof_v2"
+    LMDB_DIR: str = "data/lmdb/cluster_prof_v2"
+
+    # Input/Output keys
+    X_KEY: str = "fft_lr"  # Low-resolution from truncated acquisition
+    Y_KEY: str = "fft_hr"  # High-resolution from full acquisition
+
+    # Model save path
+    MODEL_SAVE_PATH: str = "weights/best_cluster_prof_v2_lstm_seq2seq.pt"
+
+    # Batch size
+    BATCH_SIZE: int = 64  # Larger batch for cluster data

@@ -1,5 +1,5 @@
 """
-Mass spectrum visualization with matplotlib (static plots).
+Mass spectrum visualization with matplotlib (static train_plots).
 """
 import numpy as np
 import matplotlib.pyplot as plt

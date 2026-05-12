@@ -8,14 +8,14 @@ import matplotlib.gridspec as gridspec
 import numpy as np
 import os
 
-PLOTS_DIR = "plots/high_res"
+PLOTS_DIR = "train_plots/cluster"
 os.makedirs(PLOTS_DIR, exist_ok=True,)
 
 
 class HeadlessMonitor:
     """
     Drop-in replacement for TrainingMonitorGUI that works without a display.
-    Prints a progress bar to stdout and saves plots/loss_curve.png each epoch.
+    Prints a progress bar to stdout and saves train_plots/loss_curve.png each epoch.
     """
 
     def __init__(self, total_epochs, model_name="LSTM Seq2Seq"):
@@ -82,7 +82,7 @@ class HeadlessMonitor:
 
 class HeadlessSpectraPlotter:
     """
-    Saves plots/spectra_epochNNNN.png every `plot_every` epochs.
+    Saves train_plots/spectra_epochNNNN.png every `plot_every` epochs.
 
     Columns: Low-res X  |  High-res Y  |  Prediction Ŷ
     Rows:    one per sample

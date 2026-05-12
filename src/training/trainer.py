@@ -42,6 +42,8 @@ def train_one_epoch(model,
                     scaler: GradScaler = None):
     model.train()
     total_loss = 0.0
+    total_steps = len(train_loader)
+
     for i, (xb, yb) in enumerate(train_loader, start=1):
         xb = xb.to(device, non_blocking=True).float().contiguous()
         yb = yb.to(device, non_blocking=True).float().contiguous()
@@ -69,12 +71,18 @@ def train_one_epoch(model,
 
         total_loss += loss.item() * xb.size(0)
 
+        # Print step progress
+        if i % max(1, total_steps // 10) == 0 or i == total_steps:
+            print(f"  Train step {i}/{total_steps}")
+
     return total_loss / len(train_loader.dataset)
 
 
 def validate(model, val_loader, criterion, device, scaler: GradScaler = None):
     model.eval()
     total_loss = 0.0
+    total_steps = len(val_loader)
+
     with torch.no_grad():
         for i, (xb, yb) in enumerate(val_loader, start=1):
             xb = xb.to(device, non_blocking=True).float().contiguous()
@@ -90,6 +98,11 @@ def validate(model, val_loader, criterion, device, scaler: GradScaler = None):
                 loss = criterion(y_hat, yb)
 
             total_loss += loss.item() * xb.size(0)
+
+            # Print step progress
+            if i % max(1, total_steps // 10) == 0 or i == total_steps:
+                print(f"  Val step {i}/{total_steps}")
+
     return total_loss / len(val_loader.dataset)
 
 
@@ -120,7 +133,10 @@ def fit(model,
     epoch_end_callback : callable, optional
         Called at the end of every epoch after the GUI update.
         Signature: callback(epoch: int, model: nn.Module, device)
-        Intended use: spectra preview plots, custom logging, etc.
+        Intended use: spectra preview train_plots, custom logging, etc.
+    val_loader : DataLoader or callable
+        Either a DataLoader object or a callable that returns one.
+        If callable, it will be called once to get the validation loader.
     """
 
     early_stopping = EarlyStopping(patience=patience, min_delta=1e-7)
@@ -128,13 +144,19 @@ def fit(model,
     history = {"train": [], "val": []}
 
     # Create GradScaler if using AMP
+
     scaler = GradScaler() if use_amp else None
 
+    # Resolve val_loader if it's a callable (lazy loading)
+    if callable(val_loader):
+        print("📦 Initializing validation loader...")
+        val_loader = val_loader()
+        print("✅ Validation loader ready")
+
     for epoch in range(1, epochs + 1):
-        print(f"epoch {epoch}/{epochs}: ")
-        if torch.cuda.is_available():
-            torch.cuda.synchronize()
-        print("Synchronizing CUDA devices Done ")
+        print(f"\nepoch {epoch}/{epochs}")
+        # if torch.cuda.is_available():
+        #     torch.cuda.synchronize()
 
         t0 = time.time()
 

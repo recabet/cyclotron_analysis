@@ -6,8 +6,8 @@ Multi-GPU support via torch.nn.DataParallel.
 
 Outputs:
   - Console progress bar each epoch
-  - plots/loss_curve.png          — updated every epoch
-  - plots/spectra_epochNNNN.png   — 3-panel spectra grid every PLOT_EVERY epochs
+  - train_plots/loss_curve.png          — updated every epoch
+  - train_plots/spectra_epochNNNN.png   — 3-panel spectra grid every PLOT_EVERY epochs
   - training_history.npz
   - best model checkpoint
 """
