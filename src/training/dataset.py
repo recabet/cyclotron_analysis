@@ -12,8 +12,11 @@ class H5SpectraDataset(Dataset):
     - interval_size=None  -> returns full spectrum (L=8192)
     - interval_size=int   -> returns peak-centered window of that size
 
-    NOTE:
-    Use num_workers=0 in DataLoader to avoid h5py multiprocessing issues.
+    Performance:
+    - preload=True (default): loads all data into RAM once at init, eliminating
+      per-sample H5 I/O during training. Requires enough RAM to hold the dataset.
+    - preload=False: streams from H5 on each __getitem__. Use num_workers=0
+      or implement worker_init_fn to avoid h5py multiprocessing issues.
     """
 
     def __init__(self,
@@ -21,10 +24,11 @@ class H5SpectraDataset(Dataset):
                  x_key: str,
                  y_key: str,
                  interval_size: int = None,
-                 centered:bool=False,
+                 centered: bool = False,
                  indices: np.ndarray = None,
                  normalize: bool = False,
-                 eps: float = 1e-12):
+                 eps: float = 1e-12,
+                 preload: bool = True):
 
         super().__init__()
 
@@ -35,15 +39,23 @@ class H5SpectraDataset(Dataset):
         self.centered = centered
         self.normalize = normalize
         self.eps = eps
+        self.preload = preload
         self._file = None
+        self.x_data = None
+        self.y_data = None
 
         if interval_size is not None:
             assert interval_size % 2 == 0, "interval_size must be even"
             self.half_window = interval_size // 2
 
-        # Load dataset size
         with h5py.File(self.h5_path, "r") as f:
             N = len(f[self.x_key])
+            if self.preload:
+                print(f"  Preloading {self.h5_path} into memory... ", end="", flush=True)
+                self.x_data = f[self.x_key][:]
+                self.y_data = f[self.y_key][:]
+                mb = (self.x_data.nbytes + self.y_data.nbytes) / 1024 ** 2
+                print(f"done ({mb:.0f} MB)")
 
         all_idx = np.arange(N)
         self.indices = all_idx if indices is None else np.asarray(indices)
@@ -108,12 +120,16 @@ class H5SpectraDataset(Dataset):
         return window
 
     def __getitem__(self, idx):
-        self._ensure_open()
-
         i = int(self.indices[idx])
 
-        x = self._file[self.x_key][i]
-        y = self._file[self.y_key][i]
+        # Load from preloaded arrays or stream from H5
+        if self.preload:
+            x = self.x_data[i]
+            y = self.y_data[i]
+        else:
+            self._ensure_open()
+            x = self._file[self.x_key][i]
+            y = self._file[self.y_key][i]
 
         # ---- Optional interval mode ----
         if self.interval_size is not None:
@@ -140,5 +156,6 @@ class H5SpectraDataset(Dataset):
         try:
             if self._file is not None:
                 self._file.close()
-        except Exception:
+        except Exception as e:
+            print(f"Warning: Failed to close HDF5 file: {e}")
             pass

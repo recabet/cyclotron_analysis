@@ -1,5 +1,5 @@
 """
-Diagnostic plots for quality control of generated data.
+Diagnostic train_plots for quality control of generated data.
 """
 import numpy as np
 import matplotlib.pyplot as plt
