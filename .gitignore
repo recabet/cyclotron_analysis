@@ -1,7 +1,6 @@
 docs
 data/waves
 data/lmdb
-weights
 .venv
 .idea
 *.iml
@@ -10,4 +9,3 @@ slides
 __pycache__
 *.logs
 *.log
-*.npz
