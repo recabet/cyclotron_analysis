@@ -1,5 +1,5 @@
 from src.scripts import generate_cluster_const_noise
-from src.scripts import train_super_resolution
+from src.scripts import train_cluster_prof_v2
 from src.scripts import test_cluster_super_resolution
 
 
@@ -9,7 +9,7 @@ def main():
         generate_cluster_const_noise.main()
     
         # Step 2: Train Super-Resolution Model on Clustered Dataset
-        train_super_resolution.main()
+        train_cluster_prof_v2.main()
     
         # Step 3: Test Super-Resolution Model on Clustered Dataset
         test_cluster_super_resolution.main()
