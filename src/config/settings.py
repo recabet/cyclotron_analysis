@@ -20,7 +20,7 @@ class SimulationConfig:
     # ----------------------------------------
     # Isotope distribution (IsoSpec)
     # ----------------------------------------
-    COVERAGE_PROB: float = 0.99  # Fraction of probability space to cover
+    COVERAGE_PROB: float = 0.999  # Fraction of probability space to cover
     COMPOUNDS_FILE: str = "data/compounds/compounds_660000hz_at_10T_long.txt"
 
     # ----------------------------------------
@@ -104,12 +104,14 @@ class ClusterConfig:
     # Signal acquisition - high res (full acquisition)
     # ----------------------------------------
     N_POINTS_FID: int = 2048  # Full acquisition time points
+    N_POINTS_FID_V2: int = 512  # Full acquisition time points
+    N_POINTS_FID_LR:int=64
     SAMPLING_RATE: float = 1e6  # Hz
 
     # ----------------------------------------
     # Signal acquisition - low res (truncated acquisition)
     # ----------------------------------------
-    ACQUISITION_REDUCTION_FACTOR: int = 8  # Low-res uses 1/N of full points (8x = 256 pts instead of 2048)
+    ACQUISITION_REDUCTION_FACTOR: int = 16  # Low-res uses 1/N of full points (8x = 256 pts instead of 2048)
 
     # ----------------------------------------
     # Zero-filling and FFT
@@ -140,13 +142,13 @@ class ClusterConfig:
     # ----------------------------------------
     # Isotope distribution (IsoSpec)
     # ----------------------------------------
-    COVERAGE_PROB: float = 0.99  # Fraction of probability space to cover
+    COVERAGE_PROB: float = 0.999  # Fraction of probability space to cover
     COMPOUNDS_FILE: str = "data/compounds/compounds_660000hz_at_10T_long.txt"
 
     # ----------------------------------------
     # Output
     # ----------------------------------------
-    LMDB_DIR: str = "data/lmdb/cluster_prof_v2"
+    LMDB_DIR: str = "data/lmdb/cluster_prof_v2_fix"
     PLOT_DIR: str = "figures/cluster_prof_v2"
     MAX_AMPLITUDE: float = 1.0  # Global scaling for peak heights
 
@@ -160,7 +162,7 @@ class ClusterConfig:
     # ----------------------------------------
     # Batch processing
     # ----------------------------------------
-    BATCH_SIZE: int = 5000  # Compounds per batch
+    BATCH_SIZE: int = 20000  # Compounds per batch
 
 
 @dataclass(frozen=True)
@@ -251,8 +253,8 @@ class ClusterTrainingConfig(TrainingConfig):
     """Configuration for cluster prof_v2 super-resolution training."""
 
     # Override data paths for cluster prof_v2 LMDB file
-    H5_PATH: str = "data/lmdb/cluster_prof_v2"
-    LMDB_DIR: str = "data/lmdb/cluster_prof_v2"
+    H5_PATH: str = "data/lmdb/cluster_prof_v2_fix"
+    LMDB_DIR: str = "data/lmdb/cluster_prof_v2_fix"
 
     # Input/Output keys
     X_KEY: str = "fft_lr"  # Low-resolution from truncated acquisition

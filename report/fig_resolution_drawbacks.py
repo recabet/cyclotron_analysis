@@ -10,14 +10,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ''))
 from src.config.settings import ClusterConfig
 
 # ============================================================
 # Load real data for panels A and B
 # ============================================================
 config = ClusterConfig()
-env = lmdb.open(config.LMDB_DIR + '/test.lmdb', readonly=True, lock=False)
+env = lmdb.open("../"+config.LMDB_DIR + '/test.lmdb', readonly=True, lock=False)
 txn = env.begin()
 
 best = None
